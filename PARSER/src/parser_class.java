@@ -472,7 +472,7 @@ public class parser_class {
 				System.out.println("ERROR: Coule not parse HTML book");
 			}
 		}
-		
+
 		List<String> md5_hash_list = new Vector<String>();
 		boolean delete_decide = false; 
 		boolean read_success = false;
