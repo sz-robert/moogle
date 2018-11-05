@@ -1,7 +1,6 @@
 import java.sql.Date;
 
 public class Book {
-	
 	String location;
 	String title;
 	String author;
