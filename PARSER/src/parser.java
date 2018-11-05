@@ -37,14 +37,17 @@ public class parser {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		String hash_check_file = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage/parsed_hashes.txt";
-		String html_file = "/Volumes/Untitled 1/GUTENBERG/gut_books_2/etext00/eduha10h.htm";
+		//String html_file = "/Volumes/Untitled 1/GUTENBERG/gut_books_2/etext00/eduha10h.htm";
+		//String html_file = "/Volumes/Untitled 1/GUTENBERG/gut_books_2/etext05/8trsa10h.htm";
+		String html_file = "/Volumes/Untitled 1/GUTENBERG/gut_books_2/etext04/fb10w11h/fb10w11h.html";
 		specialized_ops test_i = new specialized_ops(); 
-		//test_i.parse_html(html_file, hash_check_file); 
+		test_i.parse_html(html_file, hash_check_file); 
 		
 		 String book_storage_location = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage";
 		 //String hash_check_file = "parsed_hashes.txt"; 
 		 //String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books"; 
-		String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books_2"; 
+		//String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books_2"; 
+		 String book_directory = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage/test";
 		parser_class main_parser = new parser_class(); 
 		
 		main_parser.setup_env(book_storage_location, hash_check_file, book_directory);
@@ -55,7 +58,7 @@ public class parser {
 		
 		while(throttle != 3 + 1) //three iterations 1000 attempts each. 
 		{
-			main_parser.start_parsing_em(1000);
+			main_parser.start_parsing_em(10);
 			
 			List <parser_class.book_containers> my_bookz = main_parser.get_parsed_books();
 			
@@ -65,15 +68,6 @@ public class parser {
 			{
 				//System.out.println("AUTHOR: " + element.author);
 				System.out.println("parsed TITLE: " + element.title);
-				
-				/*
-				System.out.println("BOOK LOCATION: " + element.file_location);
-				String [] book_sentences = element.book_sentences;
-				for(String sentence : book_sentences)
-				{
-					System.out.println(sentence);
-				}
-				*/
 			}
 			
 			for(parser_class.book_containers ii : my_bookz)
@@ -88,8 +82,17 @@ public class parser {
 		int total_bookz_parsed = 0; 
 		for(parser_class.book_containers i : all_parsed_books)
 		{
+			
 			System.out.println("TITLE: " + i.title);
-			String [] book_sentences = i.book_sentences;
+			if(i.title.startsWith("Book "))
+			{
+			String [] bible_sentences = i.book_sentences;
+				for(String verse : bible_sentences)
+				{
+					System.out.println(verse + "\n"); 
+				}
+			}
+				System.out.println("Location: " + i.file_location);
 			total_bookz_parsed += 1; 
 		}
 		

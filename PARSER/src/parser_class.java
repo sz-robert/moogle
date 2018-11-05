@@ -13,11 +13,14 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -28,6 +31,13 @@ import org.jsoup.select.Elements;
 
 public class parser_class {
 
+	
+
+	public class thot_new_thread implements Runnable {
+	public void run(){
+	System.out.println("MyClass running");
+	   } 
+	}
 	
 	public static class book_containers{
 		String author = ""; 
@@ -54,6 +64,24 @@ public class parser_class {
 			return book_count; 
 		}
 	
+		public String[] splitAndKeep(String input, String regex, int offset) {
+	        ArrayList<String> res = new ArrayList<String>();
+	        Pattern p = Pattern.compile(regex);
+	        Matcher m = p.matcher(input);
+	        int pos = 0;
+	        while (m.find()) {
+	            res.add(input.substring(pos, m.end() - offset));
+	            pos = m.end() - offset;
+	        }
+	        if(pos < input.length()) res.add(input.substring(pos));
+	        return res.toArray(new String[res.size()]);
+	    }
+		
+		public String[] splitAndKeep(String input, String regex) {
+	        return splitAndKeep(input, regex, 0);
+	    }
+		
+		
 		//REMOVE LAST CHARACTER
 		public String removeLastChar(String str) {
 	        return str.substring(0, str.length() - 1);
@@ -196,21 +224,15 @@ public class parser_class {
 		container_for_return.title = local_instance.book_title; 
 		container_for_return.file_location = local_instance.book_location; 
 		//container_for_return.book_sentences = (String[]) local_instance.book_lines.toArray();
-		int line_size = local_instance.book_lines.size(); 
+		int line_size = local_instance.book_senteces.length; 
 		if(line_size == 0)
 		{
 			System.out.println("ERROR: Unknown ERROR parsing book");
 			return 0; 
 		}
 		
-		String temp_linez [] = new String[line_size];
-		int throttle = 0; 
-		for(String tempa : local_instance.book_lines)
-		{
-			temp_linez[throttle] = tempa; 
-			throttle += 1; 
-		}
-		container_for_return.book_sentences = temp_linez; 
+		//container_for_return.book_sentences = temp_linez; 
+		container_for_return.book_sentences = local_instance.book_senteces;
 		this.book_storage.add(container_for_return);
 		append_log("BOOK_TITLE: " + container_for_return.title);	 //so we dont parse again! 
 		return 1; 
@@ -254,10 +276,11 @@ public class parser_class {
 					
 					for( String individual_line : file_linez)	//simpy line by line in book
 					{
-						individual_line = individual_line.trim(); 
+						//individual_line = individual_line.trim(); 
 						
 						if(individual_line.contains("Title:"))
 						{
+							individual_line = individual_line.trim();
 							//System.out.println("Book Title Found");
 							System.out.println(individual_line);
 							individual_line = individual_line.replace("Title:", ""); 
@@ -274,6 +297,7 @@ public class parser_class {
 						
 						if(individual_line.contains("Author:"))
 						{
+							individual_line = individual_line.trim();
 							//System.out.println("Book Title Found");
 							System.out.println(individual_line);
 							individual_line = individual_line.replace("Author:", ""); 
@@ -317,16 +341,24 @@ public class parser_class {
 						book_copy.title = book_title; 
 						
 						//int size_nec = book_text.length() - book_text.replace(".", "").length();
-						int size_nec = book_text.split("\\.",-1).length-1;
-						String [] book_senteces2 = new String[size_nec];  
+						//int size_nec = book_text.split("\\.",-1).length-1;
+						//String [] book_senteces2 = new String[size_nec];  
 						//System.out.println(book_text);  //DEBUG SHOW ALL THE BOOK SENTECES
-						book_senteces2 = book_text.split("\\."); 
+						//book_senteces2 = book_text.split("\\."); 
 						//for(String x : book_senteces2) //DEBUG SHOW THEM ALL SPLIT UP BY REGEX
 						//{
 						//	System.out.println(x);
 						//}
+						String [] da_book_lines = splitAndKeep(book_text, "[A-Z]*\\.\\s");
 						
-						book_copy.book_sentences = book_senteces2;
+						String [] book_sentences2 = new String[da_book_lines.length];
+						int throttlez = 0; 
+						for(String i : da_book_lines)
+						{
+							book_sentences2[throttlez] = i; 
+						}
+						
+						book_copy.book_sentences = book_sentences2;
 						book_copy.file_location = unzipped; 
 						book_storage.add(book_copy); //lets store the book
 						parse_success = 1; 
@@ -432,6 +464,7 @@ public class parser_class {
 	
 	public void start_parsing_em(int number_to_parse) {
 		
+		int book_counter = 0; 
 		if(this.book_storage_location.equals(""))
 		{
 			System.out.println("Please Configure the class first");
@@ -452,24 +485,57 @@ public class parser_class {
 		
 		// TODO Auto-generated method stub
 		//String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books/"; 
+		
 		List<String> zipped_file_list = new Vector<String>();
 		stream_dir_contents(book_directory, zipped_file_list, ".zip");
 		int number_of_zips = zipped_file_list.size();
 		System.out.println("Number of ZIPS/BOOKS: " + number_of_zips);
 		
+		List<String> raw_htm_filez = new Vector<String>();	//list all the unzipped html files now!
+		stream_dir_contents(book_directory, raw_htm_filez, ".htm");
+		System.out.println("Number of HTM BOOKS: " + raw_htm_filez.size());
+		
 		List<String> raw_html_filez = new Vector<String>();	//list all the unzipped html files now!
-		stream_dir_contents(book_directory, raw_html_filez, ".htm");
+		stream_dir_contents(book_directory, raw_html_filez, ".html");
+		System.out.println("Number of HTML BOOKS: " + raw_html_filez.size());
+		
 		int temp_success = 0; 
+		
 		for(String html_file : raw_html_filez)
 		{
 			temp_success = parse_html(html_file);
 			if(temp_success == 1)
-			{
-				System.out.println("SUCCESS: Parsed HTML BOOK");
+			{										//LETS PARSE THE HTM BOOKS FIRST
+				System.out.println("SUCCESS: Parsed HTM BOOK");
+				book_counter += 1; 
+				if(book_counter == number_to_parse)
+				{
+					System.out.println("Success: Parsed Identified Number of Books");
+					return; 
+				}
 			}
 			else
 			{
-				System.out.println("ERROR: Coule not parse HTML book");
+				System.out.println("ERROR: Coule not parse HTM book");
+			}
+		}
+		
+		for(String htm_file : raw_htm_filez)
+		{
+			temp_success = parse_html(htm_file);
+			if(temp_success == 1)
+			{										//LETS PARSE THE HTM BOOKS FIRST
+				System.out.println("SUCCESS: Parsed HTM BOOK");
+				book_counter += 1; 
+				if(book_counter == number_to_parse)
+				{
+					System.out.println("Success: Parsed Identified Number of Books");
+					return; 
+				}
+			}
+			else
+			{
+				System.out.println("ERROR: Coule not parse HTM book");
 			}
 		}
 
@@ -478,7 +544,7 @@ public class parser_class {
 		boolean read_success = false;
 		boolean book_metadata_success = false; 
 		
-		int book_counter = 0; 
+		//int book_counter = 0; 
 		for(String zip_archive : zipped_file_list)	//ITERATE THROUGH ALL THE ARCHIVES
 		{
 			List<String> unzipped_filez = unzip_file(zip_archive); 
@@ -488,23 +554,42 @@ public class parser_class {
 				System.out.println("\n\n");
 				System.out.println("Attempting to Parse Book: " + unzipped);
 				
-				if(parse_text_version(unzipped) == 1)
+				if(unzipped.contains(".htm") | unzipped.contains(".html"))
 				{
-					System.out.println("Success: Parsed Book: " + unzipped);
-					book_counter += 1; 
-					if(number_to_parse != 0)
-					{
-						if(number_to_parse == book_counter)
-						{
-							return; //THIS WILL ALLOW THE USER TO STREAM TO BOOKS
-									//SO THEY DONT FILL UP THEYRE RAM :) 
+						temp_success = parse_html(unzipped);
+						if(temp_success == 1)
+						{										//LETS PARSE THE HTM BOOKS FIRST
+							System.out.println("SUCCESS: Parsed HTM BOOK");
+							book_counter += 1; 
+							if(book_counter == number_to_parse)
+							{
+								System.out.println("Success: Parsed Identified Number of Books");
+								return; 
+							}
 						}
-					}
-					
 				}
-				else
+					
+				if(unzipped.contains("txt"))
 				{
-					System.out.println("Error: Could Not Parsed Book: " + unzipped);
+					if(parse_text_version(unzipped) == 1)
+					{
+						System.out.println("Success: Parsed Book: " + unzipped);
+						book_counter += 1; 
+						if(number_to_parse != 0)
+						{
+							if(number_to_parse == book_counter)
+							{
+								return; //THIS WILL ALLOW THE USER TO STREAM TO BOOKS
+										//SO THEY DONT FILL UP THEYRE RAM :) 
+							}
+						}
+						
+					
+					}
+					else
+					{
+						System.out.println("Error: Could Not Parsed Book: " + unzipped);
+					}
 				}
 				System.out.println("Book Parse Count: " + book_counter);
 			}
@@ -554,7 +639,7 @@ public class parser_class {
 		        	  	}
 	        	  	}
 	        	  	else {
-	        	  		System.out.println("Call Func Recursively");
+	        	  		//System.out.println("Call Func Recursively");
 	        	  		stream_dir_contents(abs_path, da_file_names, ext_type); 
 	        	  	}
 		       }
@@ -604,12 +689,14 @@ public class parser_class {
             //test hash
             
             String file_hash = get_da_MD5(logFileName); 
-			List<String> hashes_array = read_file(hash_check_file); 
+			//List<String> hashes_array = read_file(hash_check_file); 
 			book_already_unzipped = false; 
 			
 			if(check_log(file_hash, 1) == 1)
 			{
 				book_already_unzipped = true; 
+				File newFile2 = new File(logFileName);
+				newFile.delete(); 
 			}
   
             //test hash

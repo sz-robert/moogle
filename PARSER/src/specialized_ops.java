@@ -4,14 +4,18 @@
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 //import org.json.simple.JSONObject;
@@ -37,6 +41,7 @@ public class specialized_ops {
 	public String book_location = "";  
 	//private String [] book_lines = null; 
 	public List<String> book_lines = new Vector<String>();
+	public String [] book_senteces; 
 	
 	public void cleanup_class()
 	{
@@ -46,9 +51,56 @@ public class specialized_ops {
 		this.book_lines = new Vector<String>(); 
 	}
 	
+	public String[] splitAndKeep(String input, String regex, int offset) {
+        ArrayList<String> res = new ArrayList<String>();
+        Pattern p = Pattern.compile(regex);
+        Matcher m = p.matcher(input);
+        int pos = 0;
+        while (m.find()) {
+            res.add(input.substring(pos, m.end() - offset));
+            pos = m.end() - offset;
+        }
+        if(pos < input.length()) res.add(input.substring(pos));
+        return res.toArray(new String[res.size()]);
+    }
+	
+	public String[] splitAndKeep(String input, String regex) {
+        return splitAndKeep(input, regex, 0);
+    }
+	
+	public int ensure_hash_file(String hash_check_file)
+	{
+		
+		File file = new File(hash_check_file);
+		try {
+			if (file.createNewFile()) {
+			    
+			    System.out.println("HASH File has been created.");
+			    System.out.println(hash_check_file);
+			} else {
+			
+			    //System.out.println("HASH File already exists.");
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println("ERROR: COULD NOT CREATE HASH FILE");
+			return 0; 
+		}
+		
+		return 1; //hash log file good to go
+	}
+	
 	public int parse_html(String URL_or_file, String hash_check_file)
 	{
-		book_location = URL_or_file; 
+		
+		if(ensure_hash_file(hash_check_file) == 0)
+		{
+			System.out.println("ERROR: Unknown Error with Hash Log File");
+			return 0; 
+		}
+		
+		this.book_location = URL_or_file; 
 		String [] book_lines; 
 	
 		parser_class local_i = new parser_class(); 
@@ -62,37 +114,14 @@ public class specialized_ops {
 		
 			String title_c = ""; 
 			title_c = doc.title(); 
-			if(title_c == null)
-			{			//if we dont have a title we should not parse the book
-						//the title , location, and lines are critical! 
-				System.out.println("ERROR: Couldnt parse html book title");
-				this.cleanup_class();
-				return 0; 
-			}
-			
-			if(title_c == "")
-			{
-				System.out.println("ERROR: Couldnt parse html book title");
-				this.cleanup_class();
-				return 0; 
-			}
 			
 			this.book_title = title_c; 
-			
-			System.out.println("Parsing html book: " + title_c); 
-			
-			int title_check = local_i.check_log(this.book_title, 2); //lets make sure we have already parsed this title :) 
-			if(title_check == 1)
-			{
-				System.out.println("Error: Already parsed this book (title)");
-				return 0; 
-			}
 			
 			Element content = doc.body();
 		
 			Elements prelinks = content.getElementsByTag("pre"); 
 			for (Element link : prelinks) {
-				String book_line = link.text(); 
+				String book_line = link.text();
 				String lines[] = book_line.split("\\r?\\n");
 				for(String de_line : lines)
 				{
@@ -102,12 +131,68 @@ public class specialized_ops {
 						de_line = de_line.trim(); 
 						this.book_author = de_line; 
 					}
+					
+					if(de_line.startsWith("Author:")) //might be able to pick up author in this way
+					{
+						de_line = de_line.replace("Author:", ""); 
+						de_line = de_line.trim(); 
+						this.book_author = de_line; 
+					}
+					
+					if(de_line.startsWith("Title:")) //might be able to pick up title in this way
+					{								//THIS TITLE MORE ACCURATE
+						de_line = de_line.replace("Title:", ""); 
+						de_line = de_line.trim(); 
+						this.book_title = de_line; 
+					}
 				}
+			}
+			
+			if(this.book_title == null)
+			{			//if we dont have a title we should not parse the book
+						//the title , location, and lines are critical! 
+				System.out.println("ERROR: Couldnt parse html book title");
+				this.cleanup_class();
+				return 0; 
+			}
+			
+			if(this.book_title == "" )
+			{
+				System.out.println("ERROR: Couldnt parse html book title");
+				this.cleanup_class();
+				return 0; 
+			}
+			
+			if(this.book_title.length() == 0 )
+			{
+				System.out.println("ERROR: Couldnt parse html book title");
+				this.cleanup_class();
+				return 0; 
+			}
+			
+			if(this.book_title.contains("New File")) //invalid title
+			{
+				System.out.println("ERROR: Couldnt parse html book title");
+				this.cleanup_class();
+				return 0; 
+			}
+			
+			System.out.println("Parsing html book: " + this.book_title); 
+			
+			int title_check = local_i.check_log(this.book_title, 2); //lets make sure we have already parsed this title :) 
+			if(title_check == 1)
+			{
+				System.out.println("Error: Already parsed this book (title)");
+				return 0; 
 			}
 			
 			if(this.book_author == "")
 			{
 				System.out.println("Could not find book author: Proceeding");
+			}
+			else
+			{
+				System.out.println("BOOK Author: " + this.book_author);
 			}
 			
 			Elements links = content.getElementsByTag("p");
@@ -117,22 +202,40 @@ public class specialized_ops {
 				full_book_text += book_line; 
 			  //System.out.println(book_line); 
 			}
-			
-			String [] da_book_lines = full_book_text.split("\\."); 
-			int my_len = da_book_lines.length; 
-			String [] lines_for_index = new String[my_len]; 
+															 
+			//String [] da_book_lines = full_book_text.split("[a-z]*\\."); 
+			String [] da_book_lines = splitAndKeep(full_book_text, "[A-Z]*\\.\\s");
+			//int my_len = da_book_lines.length; 
+			//String [] lines_for_index = new String[my_len]; 
+			int throttle = 0; 
 			for(String temp_string : da_book_lines)
 			{
 				temp_string = temp_string.trim(); 
-				if(temp_string.length() > 2)	 // if its got less than 2 chars its prob
+				if(temp_string.length() > 6)	 // if its got less than 6 chars its prob
 											//not a real sentence.
 				{
 					this.book_lines.add(temp_string); 
 				}
 			}
 			
+			int my_len = da_book_lines.length; 
+			String [] lines_for_index = new String[my_len]; 
+			int throttle2 = 0; 
+			for (String temp : this.book_lines)
+			{
+				lines_for_index[throttle2] = temp; 
+				throttle2 += 1; 
+			}
+			
+			if(this.book_lines.size() < 4)
+			{
+				System.out.println("ERROR: Not Enough Lines Not parsing book"); 
+				return 0; 
+			}
 			System.out.println("Number of lines in HTML book: " + this.book_lines.size());
 			System.out.println("Location of HTM file: " + this.book_location);
+			
+			this.book_senteces = lines_for_index; //so the caller can get the sentences
 			
 			for_return = 1; 
 		
