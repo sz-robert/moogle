@@ -8,7 +8,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +32,9 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
+import com.mongodb.*;
 
+import javafx.util.Pair; 
  
 
 public class specialized_ops {
@@ -42,6 +47,173 @@ public class specialized_ops {
 	//private String [] book_lines = null; 
 	public List<String> book_lines = new Vector<String>();
 	public String [] book_senteces; 
+																//format htm, html, or text
+						//were going to store raw book text
+						//and book split sentences to make the index portion easier to do. 
+	
+	
+	
+	//return an array of sentences or return nul  **WORKS NOW GOOD TO GO**
+	public String [] mongo_retrieve_sentences(String book_title, String book_type)
+	{
+		DBCursor cursor3 = null; 
+		boolean book_present = false; 
+		String [] array_for_return = null; 
+		try {
+			//MongoClient mongo = new MongoClient( "ec2-34-222-109-70.us-west-2.compute.amazonaws.com" , 9999 );
+			String password = "password123"; 
+			ServerAddress get_to_em = new ServerAddress("ec2-54-185-61-81.us-west-2.compute.amazonaws.com" , 9999); 
+			MongoCredential credential = MongoCredential.createCredential("terminator", "t1000", password.toCharArray());
+			MongoClient mongoClient = new MongoClient(get_to_em, Arrays.asList(credential));
+			DB db = mongoClient.getDB( "t1000" );
+			DBCollection coll = db.getCollection("book_collection");
+			
+			BasicDBObject whereQuery = new BasicDBObject();
+			  whereQuery.put("book_title", book_title);
+			  whereQuery.put("format_type", book_type);
+			   cursor3 = coll.find(whereQuery);
+			  if(cursor3.size() == 0)
+			  {
+				  System.out.println("ERROR: Book not in cloud.");
+			  }
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+			return null; 
+		}
+		System.out.println("ERROR: Book in cloud. Retrieving sentences");
+		try {
+			int throttle = 0; 
+			while(cursor3.hasNext()) {
+			    DBObject resultElement = cursor3.next();
+			    Map resultElementMap = resultElement.toMap();  
+			    BasicDBList scores = (BasicDBList) resultElementMap.get("book_sentences");
+			    if(scores.size() != 0)
+			    {
+			    		array_for_return = new String[scores.size()]; 
+				    	//System.out.println("Storinng the sentences");
+				    for(Object i : scores)
+					    {
+					    	array_for_return[throttle] = (String)i; 
+					    	throttle += 1; 
+					    }
+			    }
+			    //Do something with the values
+			    return array_for_return; 
+			}
+		}
+		
+		catch(Exception e)
+		{
+			System.out.println(e);
+		}
+		
+		return null; 
+	}
+	
+	//return 1 if the books already up there in the cloud
+	public int mongo_check_if_book_exist(String book_title, String book_type)
+	{
+		
+		//DBCursor cursor3 = null; 
+		try {
+			//MongoClient mongo = new MongoClient( "ec2-34-222-109-70.us-west-2.compute.amazonaws.com" , 9999 );
+			String password = "password123"; 
+			ServerAddress get_to_em = new ServerAddress("ec2-54-185-61-81.us-west-2.compute.amazonaws.com" , 9999); 
+			MongoCredential credential = MongoCredential.createCredential("terminator", "t1000", password.toCharArray());
+			MongoClient mongoClient = new MongoClient(get_to_em, Arrays.asList(credential));
+			DB db = mongoClient.getDB( "t1000" );
+			DBCollection coll = db.getCollection("book_collection");
+			
+			BasicDBObject whereQuery = new BasicDBObject();
+			  whereQuery.put("book_title", book_title);
+			  whereQuery.put("book_sentences", book_type);
+			  DBCursor cursor3 = coll.find(whereQuery);
+			  if(cursor3.size() != 0)
+			  {
+				  System.out.println("Book Already Stored in Cloud.");
+				  return 1; 
+			  }
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+			return 0; 
+		}
+		
+		return 0; 
+		
+	}
+	
+	public int mongo_cloud_insert_book(String booktitle, String booktext, String bookauthor,  
+			String [] book_senteces ,String formattype, String booklocation, boolean parse_success) 
+	{
+		int for_return = 0; 
+
+		try {
+			//MongoClient mongo = new MongoClient( "ec2-34-222-109-70.us-west-2.compute.amazonaws.com" , 9999 );
+			String password = "password123"; 
+			ServerAddress get_to_em = new ServerAddress("ec2-54-185-61-81.us-west-2.compute.amazonaws.com" , 9999); 
+			MongoCredential credential = MongoCredential.createCredential("terminator", "t1000", password.toCharArray());
+			MongoClient mongoClient = new MongoClient(get_to_em, Arrays.asList(credential));
+			DB db = mongoClient.getDB( "t1000" );
+			DBCollection coll = db.getCollection("book_collection");
+			
+			BasicDBObject whereQuery = new BasicDBObject();
+			  whereQuery.put("book_title", booktitle);
+			  whereQuery.put("format_type", formattype);
+			  DBCursor cursor3 = coll.find(whereQuery);
+			  if(cursor3.size() != 0)
+			  {
+				  System.out.println("Book Already Stored in Cloud.");
+				  return 1; 
+			  }
+			  //while (cursor3.hasNext()) {
+				//System.out.println(cursor3.next());
+			  //}
+			 
+			  ArrayList <String> sentence_list = new ArrayList<String>();	//so we can store our split sentences in cloud may as well
+			  for(String sentence : book_senteces)
+			  {
+				  sentence_list.add(sentence); 
+			  }
+			  
+			  if(book_senteces.length == 0)	//screwed up couldnt parse book store anywayz
+			  {
+				  BasicDBObject doc = new BasicDBObject("gutenburg_book", "MongoDB")
+						  .append("document_type", "gutenburg_book")
+							.append("format_type", formattype)
+							.append("parsed", false)	 // so the indexer can know not to index this
+							.append("book_title", booktitle)
+							.append("book_text", booktext);
+				  return 1; 
+			  }
+			  
+			  //if books not in cloud store him in cloud! 
+			BasicDBObject doc = new BasicDBObject("gutenburg_book", "MongoDB")
+					.append("document_type", "gutenburg_book")
+					.append("format_type", formattype)
+					.append("indexed", false)
+					.append("parsed", parse_success)
+					.append("book_location", booklocation)
+					.append("book_title", booktitle)
+					.append("book_author", bookauthor)
+					.append("book_text", booktext)
+					.append("book_sentences", sentence_list); 
+			coll.insert(doc);
+			System.out.println("SUCCESS: Uploaded book to Cloud");
+			return 1; 
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println(e);
+			System.out.println("CRITICAL ERROR: CANNOT ACCESS CLOUD DB");
+			return 0; 
+		}
+		
+	}
 	
 	public void cleanup_class()
 	{

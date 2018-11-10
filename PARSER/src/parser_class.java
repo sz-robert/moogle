@@ -28,6 +28,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import java.util.Arrays;
 
 public class parser_class {
 
@@ -44,11 +45,15 @@ public class parser_class {
 		String title = ""; 
 		String file_location = "";  
 		String [] book_sentences; 
+		int in_cloud = 0; //we can let the caller know whether we stored it in the cloud
 	}
 
 	public String book_storage_location = "";
 	public String hash_check_file = ""; 
 	public String book_directory = ""; 
+	//public int storeondisk = 0; //do we want to store on disk?
+	//public int storeincloud = 0; //do we want to store in cloud? 
+	public int diskorcloud = 0; 
 	
 	List<book_containers> book_storage = new Vector<book_containers>();	//CLASS WILL GIVE
 	//TO PARENT APP!
@@ -205,7 +210,8 @@ public class parser_class {
 		return this.book_storage;	//return our stack of books! 
 	}
 	
-	public int parse_html(String file_name)
+	public int parse_html(String file_name, String doc_type) //doc type will be either
+															//htm or html
 	{
 		int for_return = 0; 
 		
@@ -233,12 +239,28 @@ public class parser_class {
 		
 		//container_for_return.book_sentences = temp_linez; 
 		container_for_return.book_sentences = local_instance.book_senteces;
+		
+		if(this.diskorcloud == 0)	//dont need this if storing in cloud! 
+		{
 		this.book_storage.add(container_for_return);
+		}
 		append_log("BOOK_TITLE: " + container_for_return.title);	 //so we dont parse again! 
+		String book_text_for_storage = read_entire_file(file_name); //we have to read it all again sadly
+									//so we can store book in the cloud
+			
+			if(this.diskorcloud == 1) //you have to tell the class 
+				//you want to store the book in the cloud! 
+				{
+				specialized_ops da_insert = new specialized_ops(); 
+				da_insert.mongo_cloud_insert_book(container_for_return.title, book_text_for_storage, 
+						local_instance.book_author, local_instance.book_senteces, doc_type, file_name, true); 
+				}
+		
 		return 1; 
 	}
 	
-	public int parse_text_version(String unzipped)
+	public int parse_text_version(String unzipped) //USES OLD STYLE PARSING
+													//DEPRECATED!
 	{
 		int parse_success = 0; 
 		boolean delete_decide = false; //delete unzipped book if we cant parse it (DONT WASTE SPACE)
@@ -321,10 +343,11 @@ public class parser_class {
 															//place book into memory. 
 							}
 						}	
-						
+													//test out the buffer read / searcher!
 						if(individual_line.contains("START OF THIS PROJECT"))
 						{
 							//System.out.println("Found Beginning of Book");
+							//read_entire_file(unzipped, 1);
 							found_text = true; 
 						}
 							
@@ -462,7 +485,15 @@ public class parser_class {
 		return for_return; 
 	}
 	
-	public void start_parsing_em(int number_to_parse) {
+						//need to tell class whether you want the data
+						//parsed store on local disk or on cloud
+	
+	public void start_parsing_em(int number_to_parse, int disk_or_cloud) {
+		
+		this.diskorcloud = disk_or_cloud; //1 for cloud 0 for disk
+											//disk storage might be unstable as ive 
+											//been moving all the stuff to cloud
+											//per our professor
 		
 		int book_counter = 0; 
 		if(this.book_storage_location.equals(""))
@@ -499,11 +530,31 @@ public class parser_class {
 		stream_dir_contents(book_directory, raw_html_filez, ".html");
 		System.out.println("Number of HTML BOOKS: " + raw_html_filez.size());
 		
+		List<String> text_book_filez = new Vector<String>();	//list all the unzipped html files now!
+		stream_dir_contents(book_directory, text_book_filez, ".txt");
+		System.out.println("Number of TXT BOOKS: " + text_book_filez.size());
+		
 		int temp_success = 0; 
 		
-		for(String html_file : raw_html_filez)
+		//lets parse out all the raw text file bookz FIRST! :) 
+		for(String text_file : text_book_filez)		//PARSE TEXT ONLY BOOKS
 		{
-			temp_success = parse_html(html_file);
+			System.out.println(text_file);
+			String what_u_got = read_file_parse_txt(text_file, 1);	//PARSE ARG OF 1!
+			if(what_u_got == null)
+			{
+				System.out.println("We could not parse this TXT book");
+			}
+			else
+			{
+				System.out.println("COMPLETE SUCCESS: PARSED TXT BOOK");
+			}
+			//String [] da_book_lines = splitAndKeep(what_u_got, "[A-Z]*\\.\\s");
+		}
+		
+		for(String html_file : raw_html_filez)		//PARSE HTML ONLY BOOKS
+		{
+			temp_success = parse_html(html_file, "html");
 			if(temp_success == 1)
 			{										//LETS PARSE THE HTM BOOKS FIRST
 				System.out.println("SUCCESS: Parsed HTM BOOK");
@@ -520,9 +571,9 @@ public class parser_class {
 			}
 		}
 		
-		for(String htm_file : raw_htm_filez)
+		for(String htm_file : raw_htm_filez)		//PARSE HTM ONLY BOOKS :) 
 		{
-			temp_success = parse_html(htm_file);
+			temp_success = parse_html(htm_file, "htm");
 			if(temp_success == 1)
 			{										//LETS PARSE THE HTM BOOKS FIRST
 				System.out.println("SUCCESS: Parsed HTM BOOK");
@@ -554,9 +605,10 @@ public class parser_class {
 				System.out.println("\n\n");
 				System.out.println("Attempting to Parse Book: " + unzipped);
 				
-				if(unzipped.contains(".htm") | unzipped.contains(".html"))
+				//parse htm
+				if(unzipped.contains(".htm"))
 				{
-						temp_success = parse_html(unzipped);
+						temp_success = parse_html(unzipped, "htm");
 						if(temp_success == 1)
 						{										//LETS PARSE THE HTM BOOKS FIRST
 							System.out.println("SUCCESS: Parsed HTM BOOK");
@@ -567,33 +619,317 @@ public class parser_class {
 								return; 
 							}
 						}
+						
+						
 				}
-					
-				if(unzipped.contains("txt"))
+				
+				else
 				{
-					if(parse_text_version(unzipped) == 1)
-					{
-						System.out.println("Success: Parsed Book: " + unzipped);
-						book_counter += 1; 
-						if(number_to_parse != 0)
-						{
-							if(number_to_parse == book_counter)
+					System.out.println("Error: Could Not Parsed HTM Book: " + unzipped);
+				}
+				
+				//parse htm
+				
+				//parse html
+				
+				if(unzipped.contains(".html"))
+				{
+						temp_success = parse_html(unzipped, "html");
+						if(temp_success == 1)
+						{										//LETS PARSE THE HTM BOOKS FIRST
+							System.out.println("SUCCESS: Parsed HTML BOOK");
+							book_counter += 1; 
+							if(book_counter == number_to_parse)
 							{
-								return; //THIS WILL ALLOW THE USER TO STREAM TO BOOKS
-										//SO THEY DONT FILL UP THEYRE RAM :) 
+								System.out.println("Success: Parsed Identified Number of Books");
+								return; 
 							}
 						}
-						
+				}
+				
+				else
+				{
+					System.out.println("Error: Could Not Parsed HTML Book: " + unzipped);
+				}
+				
+				//parse html
+				
 					
+				if(unzipped.contains(".txt"))
+				{
+					System.out.println(unzipped);
+					String what_u_got = read_file_parse_txt(unzipped, 1);	//PARSE ARG OF 1!
+					if(what_u_got == null)
+					{
+						System.out.println("We could not parse this TXT book");
 					}
 					else
 					{
-						System.out.println("Error: Could Not Parsed Book: " + unzipped);
+						System.out.println("COMPLETE SUCCESS: PARSED TXT BOOK");
+						book_counter += 1; 
+						if(book_counter == number_to_parse)
+						{
+							System.out.println("Success: Parsed Identified Number of Books");
+							return; 
+						}
 					}
 				}
 				System.out.println("Book Parse Count: " + book_counter);
 			}
 		}
+	}
+	
+	public static String read_entire_file(String da_file_name)
+	{
+		try {
+			File file = new File(da_file_name);
+			int file_length = da_file_name.length(); 
+			if(file_length > 1.5e+7) //dont read books over 15 megs in size
+			{
+				System.out.println("Book to large to safely read!");
+				return null;
+			}
+			FileInputStream fis = new FileInputStream(file);
+			byte[] data = new byte[(int) file.length()];
+			fis.read(data);
+			fis.close();
+			String str = new String(data, "UTF-8");		//convert to string lets do it!! :) 
+			return str; 
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+			return null; 
+		}
+	}
+	
+													//give it parse value one if we want to manually
+													//parse the text bro! 
+	public String read_file_parse_txt(String da_file_name, int parse_decide)
+	{
+		//return a big string with the book in it. then we can 
+		//parse out the text part using regex. 
+		
+		//Pattern pattern = Pattern.compile("START OF THIS PROJECT(.+?)***");
+		
+		try {
+		File file = new File(da_file_name);
+		int file_length = da_file_name.length(); 
+		if(file_length > 1.5e+7) //dont read books over 15 megs in size
+		{
+			System.out.println("Book to large to safely read!");
+			return null;
+		}
+		FileInputStream fis = new FileInputStream(file);
+		byte[] data = new byte[(int) file.length()];
+		fis.read(data);
+		fis.close();
+		
+		String book_text_str = new String(data, "UTF-8");	
+		if(data.length == 0)
+		{
+			System.out.println("ERROR: SOMETHING WENT WRONG");
+			return null; 
+		}
+		
+		String tag_title = "Title: ";
+		byte [] dat_tag_title = tag_title.getBytes();
+		
+		String author_title = "Author: "; 
+		byte [] dat_tag_author = author_title.getBytes(); 
+		
+		String parser_tag_1 = "START OF THIS PROJECT";
+		byte [] dat_tag_1 = parser_tag_1.getBytes();
+		String parser_tag_2 = "***"; 
+		byte [] dat_tag_2 = parser_tag_2.getBytes();
+		int start_index = 0; 
+		int end_index = 0;
+		int title_index = 0; 
+		String str = ""; 
+		boolean keep_going = true; 
+		
+		String book_title = ""; 	//WE REQUIRE THE BOOK TITLE
+		String book_author = "";  //FINDING BOOK AUTHOR IS OPTIONAL (not in structured format!)
+		int temp_index = 0; 
+		
+		if(parse_decide == 1)
+		{
+			KMPMatch searcher = new KMPMatch(); 
+			title_index = searcher.indexOf(data, dat_tag_title, 0);
+			if(title_index == -1)
+			{
+				return null; //cant parse book bro! 
+			}
+			
+			temp_index = title_index; 
+			temp_index = temp_index + dat_tag_title.length; 
+			while(keep_going)
+			{
+				byte temper = data[temp_index]; 
+				if(temper == 0x0D | temper == 0x0a)
+				{
+					break; //end of title lets get out of here! 
+				}
+				else
+				{
+					book_title += (char)data[temp_index]; 	//PARSE OUT BOOK 
+				}											//TITLE MANUALLY! 
+				temp_index += 1; 
+			}
+			System.out.println("BOOK Title: " + book_title);
+			//parse author
+			
+			title_index = searcher.indexOf(data, dat_tag_author, 0);
+			if(title_index == -1)
+			{
+				return null; //cant parse book bro! 
+			}
+			
+			temp_index = title_index; 
+			temp_index = temp_index + dat_tag_author.length; 
+			while(keep_going)
+			{
+				byte temper = data[temp_index]; 
+				if(temper == 0x0D | temper == 0x0a)
+				{
+					break; //end of title lets get out of here! 
+				}
+				else
+				{
+					book_author += (char)data[temp_index]; 	//PARSE OUT BOOK 
+				}											//TITLE MANUALLY! 
+				temp_index += 1; 
+			}
+			
+			//parse author
+			
+			/*
+			if(this.storeincloud == 1) //you have to tell the class 
+										//you want to store the book in the cloud! 
+			{
+			specialized_ops da_insert = new specialized_ops(); 
+			da_insert.mongo_cloud_insert_book(book_title, book_text_str, "txt", da_file_name); 
+			}
+			*/
+			start_index = searcher.indexOf(data, dat_tag_1, start_index);
+			if(start_index == -1)
+			{
+				System.out.println("ERROR: Cant find start of book");
+				return null; //cant parse book bro! 
+			}
+			
+			start_index = searcher.indexOf(data, dat_tag_2, start_index);
+			if(start_index == -1)
+			{
+				System.out.println("ERROR: Cant find start of book");
+				return null; //cant parse book bro! 
+			}
+			
+			start_index = start_index + dat_tag_2.length; 
+			
+			end_index = searcher.indexOf(data, dat_tag_2, start_index);
+			if(end_index == -1)
+			{
+				System.out.println("ERROR: Cant find END of book");
+				return null; //cant parse book bro! 
+			}
+			
+			end_index = end_index - 1; 
+			int new_buff_size = end_index - start_index; 
+			byte[] dat_data = new byte[new_buff_size];
+			int tout = 0;
+			int ii = 0; 
+			while(tout != new_buff_size)
+			{
+				dat_data[ii] = data[start_index + tout];
+				tout += 1; 
+				ii += 1; 
+			}
+			str = new String(dat_data, "UTF-8");		//convert to string lets do it!! :) 
+			str = str.trim(); //just trim off the crud! CONTAINS ENTIRE BOOK
+			//System.out.println(str);
+		}
+		
+		if(str.length() == 0)
+		{
+			return null; //somethings wrong
+		}
+		
+		//LETS PARSE SENTENCES USING DA REGEX!
+		
+		//String [] da_book_lines = splitAndKeep(what_u_got, "[A-Z]*\\.\\s");
+		String [] da_book_lines = splitAndKeep(str, "[a-z]\\.");
+		String [] cleaned_up_lines = new String[da_book_lines.length]; 
+		int move_throttle = 0; 
+		boolean copy_it = true; 
+		for(int i = 0; i < da_book_lines.length; i++)
+		{
+			copy_it = true; 
+			String temp = da_book_lines[i]; 
+			temp = temp.trim(); 
+			temp = temp.replace("\r\n", " ");
+			boolean is_upper = Character.isUpperCase(temp.codePointAt(0));
+			if(is_upper == false)
+			{
+				copy_it = false; 
+			}
+			String [] split_count = temp.split(" "); 
+			if(split_count.length < 4)
+			{
+				copy_it = false; 
+			}
+			
+			if(copy_it)
+			{
+				cleaned_up_lines[move_throttle] = temp; 
+				move_throttle += 1; 
+			}
+		}
+		/*
+		for(String i : cleaned_up_lines)
+		{
+			System.out.println(i);
+		}
+		*/
+		//PARSE SENTECES!
+		
+		book_containers store_locker = new book_containers();
+		if(this.diskorcloud == 0)
+		{
+			store_locker.title = book_title; 
+			store_locker.author = book_author; 
+			store_locker.file_location = da_file_name;
+			store_locker.book_sentences = cleaned_up_lines; 
+			store_locker.in_cloud = 0; //not in cloud unless gets marked 
+										//and stored in cloud below
+			
+		}
+		
+		if(this.diskorcloud == 1) //you have to tell the class 
+			//you want to store the book in the cloud! 
+			{
+			specialized_ops da_insert = new specialized_ops();
+			
+			int result = da_insert.mongo_cloud_insert_book(book_title, str, book_author,  
+					cleaned_up_lines , "txt", da_file_name, true);
+			
+			if(result == 0)
+			{
+				System.out.println("ERROR: Could not store book in cloud");
+				return null; 
+			}
+			//store_locker.in_cloud  = 1; //let indexer know we stored him in the cloud! 
+			}
+		
+		return str; 
+		
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR READING FILE");
+			return null; 
+		}
+		
 	}
 	
 	public static List<String> read_file(String da_file) //RETURNS FILE DATA LINE BY LINE
@@ -602,6 +938,7 @@ public class parser_class {
 
 		    try {
 				Scanner scan = new Scanner(new File(da_file));
+				//scan.
 				while(scan.hasNextLine()){
 				    String line = scan.nextLine();
 				    if(line != "") //NO POINT in adding empty lines! 
