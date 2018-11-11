@@ -620,13 +620,13 @@ public class parser_class {
 							}
 						}
 						
+						else
+						{
+							System.out.println("Error: Could Not Parsed HTM Book: " + unzipped);
+						}
 						
 				}
 				
-				else
-				{
-					System.out.println("Error: Could Not Parsed HTM Book: " + unzipped);
-				}
 				
 				//parse htm
 				
@@ -645,12 +645,13 @@ public class parser_class {
 								return; 
 							}
 						}
+						
+						else
+						{
+							System.out.println("Error: Could Not Parsed HTML Book: " + unzipped);
+						}
 				}
 				
-				else
-				{
-					System.out.println("Error: Could Not Parsed HTML Book: " + unzipped);
-				}
 				
 				//parse html
 				
@@ -669,7 +670,7 @@ public class parser_class {
 						book_counter += 1; 
 						if(book_counter == number_to_parse)
 						{
-							System.out.println("Success: Parsed Identified Number of Books");
+							System.out.println("Success: Parsed Identified Number of Books" + unzipped);
 							return; 
 						}
 					}
@@ -801,16 +802,17 @@ public class parser_class {
 				temp_index += 1; 
 			}
 			
+			specialized_ops local_instance = new specialized_ops(); 
+			int cloud_check = local_instance.mongo_check_if_book_exist(book_title, "txt"); 
+			
+			if(cloud_check == 1)
+			{
+				System.out.println("NOTE: book already in cloud dont parse again");
+				return null; 
+			}
+			
 			//parse author
 			
-			/*
-			if(this.storeincloud == 1) //you have to tell the class 
-										//you want to store the book in the cloud! 
-			{
-			specialized_ops da_insert = new specialized_ops(); 
-			da_insert.mongo_cloud_insert_book(book_title, book_text_str, "txt", da_file_name); 
-			}
-			*/
 			start_index = searcher.indexOf(data, dat_tag_1, start_index);
 			if(start_index == -1)
 			{

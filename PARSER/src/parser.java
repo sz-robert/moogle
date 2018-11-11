@@ -71,8 +71,8 @@ public class parser {
 		
 		 String book_storage_location = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage";
 		 //String hash_check_file = "parsed_hashes.txt"; 
-		 //String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books"; 
-		String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books_2"; 
+		 String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books"; 
+		//String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books_2"; 
 		 //String book_directory = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage/test";
 		parser_class main_parser = new parser_class(); 
 		
@@ -86,7 +86,7 @@ public class parser {
 		
 		while(throttle != 3 + 1) //three iterations 1000 attempts each. 
 		{						//well use option 1 for second arg to store in da cloud! 
-			main_parser.start_parsing_em(1000, 1);
+			main_parser.start_parsing_em(500, 1);
 			
 			List <parser_class.book_containers> my_bookz = main_parser.get_parsed_books();
 			

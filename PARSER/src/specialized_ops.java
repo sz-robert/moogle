@@ -52,9 +52,9 @@ public class specialized_ops {
 						//and book split sentences to make the index portion easier to do. 
 	
 	
-	
-	//return an array of sentences or return nul  **WORKS NOW GOOD TO GO**
-	public String [] mongo_retrieve_sentences(String book_title, String book_type)
+	//get all books currently parsed into MONGO CLOUD! 
+	public String [] mongo_retrieve_parsed_titles()	//we can see all the books in 
+													//out cloud for the indexer
 	{
 		DBCursor cursor3 = null; 
 		boolean book_present = false; 
@@ -67,11 +67,16 @@ public class specialized_ops {
 			MongoClient mongoClient = new MongoClient(get_to_em, Arrays.asList(credential));
 			DB db = mongoClient.getDB( "t1000" );
 			DBCollection coll = db.getCollection("book_collection");
-			
+			BasicDBObject fields = new BasicDBObject();
+			//fields.put("book_senteces", 1);
+			fields.put("book_title", 1);
 			BasicDBObject whereQuery = new BasicDBObject();
-			  whereQuery.put("book_title", book_title);
-			  whereQuery.put("format_type", book_type);
-			   cursor3 = coll.find(whereQuery);
+			  whereQuery.put("document_type", "gutenburg_book"); 
+			  whereQuery.put("parsed", true);
+			  //whereQuery.put("book_sentences", 1);
+			  //whereQuery.put("book_title", 1);
+			   cursor3 = coll.find(whereQuery, fields);
+			   
 			  if(cursor3.size() == 0)
 			  {
 				  System.out.println("ERROR: Book not in cloud.");
@@ -82,7 +87,69 @@ public class specialized_ops {
 			System.out.println(e);
 			return null; 
 		}
-		System.out.println("ERROR: Book in cloud. Retrieving sentences");
+		System.out.println("Book in cloud. Retrieving sentences");
+		try {
+				int throttle = 0; 
+				array_for_return = new String[cursor3.size()]; 
+				if(cursor3.size() == 0)
+				{
+					System.out.println("ERROR: No Books in DB");
+					return null; //there are not titles in that book. 
+				}
+				
+				System.out.println("Number of Books Parsed in DB: " + cursor3.size());
+				while(cursor3.hasNext()) {
+				    DBObject resultElement = cursor3.next();
+				    Map resultElementMap = resultElement.toMap();  
+				    String scores = (String) resultElementMap.get("book_title");
+				    System.out.println("Book Title: " + scores);
+				    //Do something with the values
+				    array_for_return[throttle] = scores; 
+				    throttle += 1; 
+				}
+					return array_for_return; 
+		}
+					
+		catch(Exception e)
+		{
+			System.out.println(e);
+			return null; 
+		}
+	}	//end func
+	
+	//return an array of sentences or return nul  **WORKS NOW GOOD TO GO**
+	public String [] mongo_retrieve_sentences(String book_title)
+	{
+		DBCursor cursor3 = null; 
+		boolean book_present = false; 
+		String [] array_for_return = null; 
+		try {
+			//MongoClient mongo = new MongoClient( "ec2-34-222-109-70.us-west-2.compute.amazonaws.com" , 9999 );
+			String password = "password123"; 
+			ServerAddress get_to_em = new ServerAddress("ec2-54-185-61-81.us-west-2.compute.amazonaws.com" , 9999); 
+			MongoCredential credential = MongoCredential.createCredential("terminator", "t1000", password.toCharArray());
+			MongoClient mongoClient = new MongoClient(get_to_em, Arrays.asList(credential));
+			DB db = mongoClient.getDB( "t1000" );
+			DBCollection coll = db.getCollection("book_collection");
+			BasicDBObject fields = new BasicDBObject();
+			fields.put("book_sentences", 1);	 //lets just get the book sentences so we dont 
+										//slow everything down with all that downloading. 
+			BasicDBObject whereQuery = new BasicDBObject();
+			  whereQuery.put("book_title", book_title);
+			  //whereQuery.put("format_type", book_type);
+			  whereQuery.put("parsed", true);
+			   cursor3 = coll.find(whereQuery, fields);
+			  if(cursor3.size() == 0)
+			  {
+				  System.out.println("ERROR: Book not in cloud.");
+			  }
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+			return null; 
+		}
+		System.out.println("SUCCESS: Book in cloud. Retrieving sentences");
 		try {
 			int throttle = 0; 
 			while(cursor3.hasNext()) {
@@ -111,6 +178,64 @@ public class specialized_ops {
 		
 		return null; 
 	}
+	
+	public String mongo_retrieve_entire_book(String book_title)
+	{
+		DBCursor cursor3 = null; 
+		boolean book_present = false; 
+		String [] array_for_return = null; 
+		try {
+			//MongoClient mongo = new MongoClient( "ec2-34-222-109-70.us-west-2.compute.amazonaws.com" , 9999 );
+			String password = "password123"; 
+			ServerAddress get_to_em = new ServerAddress("ec2-54-185-61-81.us-west-2.compute.amazonaws.com" , 9999); 
+			MongoCredential credential = MongoCredential.createCredential("terminator", "t1000", password.toCharArray());
+			MongoClient mongoClient = new MongoClient(get_to_em, Arrays.asList(credential));
+			DB db = mongoClient.getDB( "t1000" );
+			DBCollection coll = db.getCollection("book_collection");
+			BasicDBObject fields = new BasicDBObject();
+			fields.put("book_text", 1);	 //lets just get the book sentences so we dont 
+										//slow everything down with all that downloading. 
+			BasicDBObject whereQuery = new BasicDBObject();
+			  whereQuery.put("book_title", book_title);
+			  //whereQuery.put("format_type", book_type);
+			  whereQuery.put("parsed", true);
+			   cursor3 = coll.find(whereQuery, fields);
+			  if(cursor3.size() == 0)
+			  {
+				  System.out.println("ERROR: Book not in cloud.");
+			  }
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+			return null; 
+		}
+		System.out.println("SUCCESS: Book in cloud. Retrieving book text");
+		try {
+			int throttle = 0; 
+			while(cursor3.hasNext()) {
+			    DBObject resultElement = cursor3.next();
+			    Map resultElementMap = resultElement.toMap();  
+			    String scores = (String) resultElementMap.get("book_text");
+			    if(scores.length() != 0)
+			    {
+			    		return scores; 	//return the first one that is not null
+			    }
+	 
+			}
+			
+			return null; 
+		}
+		
+		catch(Exception e)
+		{
+			System.out.println(e);
+		}
+		
+		return null; 
+	}
+	
+	
 	
 	//return 1 if the books already up there in the cloud
 	public int mongo_check_if_book_exist(String book_title, String book_type)
@@ -358,6 +483,25 @@ public class specialized_ops {
 				return 0; 
 			}
 			
+			String doc_type = ""; 
+			if(URL_or_file.endsWith(".htm"))
+			{
+				doc_type = "htm"; 
+			}
+			
+			if(URL_or_file.endsWith(".html"))
+			{
+				doc_type = "html"; 
+			}
+			
+			int cloud_check = mongo_check_if_book_exist(this.book_title, doc_type);
+			//dont parse if its already in cloud! 
+			if(cloud_check == 1)
+			{
+				System.out.println("Error: Already parsed this book (title) IN CLOUD");
+				return 0; 
+			}
+					
 			if(this.book_author == "")
 			{
 				System.out.println("Could not find book author: Proceeding");
