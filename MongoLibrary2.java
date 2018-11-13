@@ -62,10 +62,10 @@ public class MongoLibrary2 implements ILibraryDB{
 	
 	MongoClient serverConnection = new MongoClient("localhost", 27017);
 	MongoDatabase db = serverConnection.getDatabase("library");
-/*	MongoClient mongo = new MongoClient( "ec2-34-222-109-70.us-west-2.compute.amazonaws.com" , 9999 );
-	String password = "password123"; 
-	ServerAddress get_to_em = new ServerAddress("ec2-54-185-61-81.us-west-2.compute.amazonaws.com" , 9999); 
-	MongoCredential credential = MongoCredential.createCredential("terminator", "t1000", password.toCharArray());
+/*	MongoClient mongo = new MongoClient( "...amazonaws.com" , 1234 );
+	String password = ""; 
+	ServerAddress get_to_em = new ServerAddress("...amazonaws.com" , 1234); 
+	MongoCredential credential = MongoCredential.createCredential("....", "...", password.toCharArray());
 	MongoDatabase db = mongo.getDatabase("library");*/
 	
 	HashSet<String> commonWords = new CommonWords().filteredWords;
