@@ -63,15 +63,13 @@ public class parser {
 		
 		// TODO Auto-generated method stub
 		String hash_check_file = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage/parsed_hashes.txt";
-		//String html_file = "/Volumes/Untitled 1/GUTENBERG/gut_books_2/etext00/eduha10h.htm";
-		//String html_file = "/Volumes/Untitled 1/GUTENBERG/gut_books_2/etext05/8trsa10h.htm";
-		String html_file = "/Volumes/Untitled 1/GUTENBERG/gut_books_2/etext04/fb10w11h/fb10w11h.html";
-		specialized_ops test_i = new specialized_ops(); 
-		//test_i.parse_html(html_file, hash_check_file, 0); 
 		
+			//please change to where you want to store books on your compooter
 		 String book_storage_location = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage";
-		 //String book_directory = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage/test";
+		 
+		 	//please change to where your gutenberg books are located. 
 		 String book_directory = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage/test";
+		 
 		 parser_class main_parser = new parser_class(); 
 		
 		main_parser.setup_env(book_storage_location, hash_check_file, book_directory);
