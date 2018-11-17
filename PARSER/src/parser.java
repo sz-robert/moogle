@@ -67,16 +67,12 @@ public class parser {
 		//String html_file = "/Volumes/Untitled 1/GUTENBERG/gut_books_2/etext05/8trsa10h.htm";
 		String html_file = "/Volumes/Untitled 1/GUTENBERG/gut_books_2/etext04/fb10w11h/fb10w11h.html";
 		specialized_ops test_i = new specialized_ops(); 
-		test_i.parse_html(html_file, hash_check_file); 
+		//test_i.parse_html(html_file, hash_check_file, 0); 
 		
 		 String book_storage_location = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage";
-		 //String hash_check_file = "parsed_hashes.txt"; 
-		 String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books"; 
-		//String book_directory = "/Volumes/Untitled 1/GUTENBERG/gut_books_2"; 
 		 //String book_directory = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage/test";
-		parser_class main_parser = new parser_class(); 
-		
-		//test_i.mongo_retrieve_sentences("The Wandering Jew, Book V.", "txt"); 
+		 String book_directory = "/Users/user/Desktop/untitled folder 2/gutenberg_book_storage/test";
+		 parser_class main_parser = new parser_class(); 
 		
 		main_parser.setup_env(book_storage_location, hash_check_file, book_directory);
 		
@@ -84,9 +80,11 @@ public class parser {
 		
 		List <parser_class.book_containers> all_parsed_books = new Vector<parser_class.book_containers>(); 
 		
-		while(throttle != 3 + 1) //three iterations 1000 attempts each. 
-		{						//well use option 1 for second arg to store in da cloud! 
-			main_parser.start_parsing_em(500, 1);
+		int total_bookz_parsed = 0; 
+		
+		while(throttle != 1) 
+		{						
+			main_parser.start_parsing_em(50, 0);  //0 for DISK store, 1 for CLOUD store :) 
 			
 			List <parser_class.book_containers> my_bookz = main_parser.get_parsed_books();
 			
@@ -94,13 +92,25 @@ public class parser {
 			
 			for (parser_class.book_containers element : my_bookz)
 			{
-				//System.out.println("AUTHOR: " + element.author);
 				System.out.println("parsed TITLE: " + element.title);
-			}
-			
-			for(parser_class.book_containers ii : my_bookz)
-			{
-				all_parsed_books.add(ii); //ADD TO MAIN LIST
+				
+				//in some cases, (htm / html) parsing author was not mandatory
+				//we may not have the author. 
+				
+				if(element.author != "" && element.author != null)
+				{
+					System.out.println("AUTHOR: " + element.author);
+				}
+				
+				//**print individual sentences for test! 
+				for(String i : element.book_sentences)
+				{
+					System.out.println(i); 
+				}
+				
+				System.out.println("Book Physical Location: " + element.file_location);
+				
+				total_bookz_parsed += 1; 
 			}
 			
 			main_parser.clear_books();
@@ -109,22 +119,6 @@ public class parser {
 			break; //lets just do one pass this time for rest
 		}
 		
-		int total_bookz_parsed = 0; 
-		for(parser_class.book_containers i : all_parsed_books)
-		{
-			
-			System.out.println("TITLE: " + i.title);
-			if(i.title.startsWith("Book "))
-			{
-			String [] bible_sentences = i.book_sentences;
-				for(String verse : bible_sentences)
-				{
-					System.out.println(verse + "\n"); 
-				}
-			}
-				System.out.println("Location: " + i.file_location);
-			total_bookz_parsed += 1; 
-		}
 		
 		System.out.println("Total number of parsed books: " + total_bookz_parsed);
 		

@@ -219,7 +219,7 @@ public class parser_class {
 		
 		specialized_ops local_instance = new specialized_ops(); 
 
-		int success = local_instance.parse_html(file_name, this.hash_check_file);
+		int success = local_instance.parse_html(file_name, this.hash_check_file, diskorcloud);
 		
 		if(success == 0)
 		{
@@ -242,8 +242,12 @@ public class parser_class {
 		
 		if(this.diskorcloud == 0)	//dont need this if storing in cloud! 
 		{
+		System.out.println("Disk Option Chosen. Storing book data Locally");
 		this.book_storage.add(container_for_return);
 		}
+		
+		
+		
 		append_log("BOOK_TITLE: " + container_for_return.title);	 //so we dont parse again! 
 		String book_text_for_storage = read_entire_file(file_name); //we have to read it all again sadly
 									//so we can store book in the cloud
@@ -251,8 +255,8 @@ public class parser_class {
 			if(this.diskorcloud == 1) //you have to tell the class 
 				//you want to store the book in the cloud! 
 				{
-				specialized_ops da_insert = new specialized_ops(); 
-				da_insert.mongo_cloud_insert_book(container_for_return.title, book_text_for_storage, 
+						specialized_ops da_insert = new specialized_ops(); 
+						da_insert.mongo_cloud_insert_book(container_for_return.title, book_text_for_storage, 
 						local_instance.book_author, local_instance.book_senteces, doc_type, file_name, true); 
 				}
 		
@@ -741,6 +745,10 @@ public class parser_class {
 		
 		String parser_tag_1 = "START OF THIS PROJECT";
 		byte [] dat_tag_1 = parser_tag_1.getBytes();
+		
+		String alternate_tag_1 = "START OF THE PROJECT"; 
+		byte [] dat_alt_tag_1 = alternate_tag_1.getBytes(); 
+		
 		String parser_tag_2 = "***"; 
 		byte [] dat_tag_2 = parser_tag_2.getBytes();
 		int start_index = 0; 
@@ -780,55 +788,89 @@ public class parser_class {
 			System.out.println("BOOK Title: " + book_title);
 			//parse author
 			
+			//if we cant parse author well still process book
+			//but mark author tag as empty. best we can do we might
+			//still want the book even with just the title
+			boolean parsed_author = true; 
 			title_index = searcher.indexOf(data, dat_tag_author, 0);
 			if(title_index == -1)
 			{
-				return null; //cant parse book bro! 
+				//return null; //cant parse book bro! 
+				parsed_author = false; 
+				
 			}
+			
+			if(diskorcloud == 0)
+			{
+				if(check_log(book_title, 2) == 1)
+				{
+					System.out.println("ERROR: Already Parsed book Returning.");
+					return null; 
+				}
+			}
+			
+			//lets make a lot of it 
+			//we dont want to keep trying to parse the same txt books! 
+			append_log("BOOK_TITLE: " + book_title);	 //so we dont parse again!
 			
 			temp_index = title_index; 
 			temp_index = temp_index + dat_tag_author.length; 
-			while(keep_going)
+			
+			if(parsed_author == true)
 			{
-				byte temper = data[temp_index]; 
-				if(temper == 0x0D | temper == 0x0a)
+					while(keep_going)
+					{
+						byte temper = data[temp_index]; 
+						if(temper == 0x0D | temper == 0x0a)
+						{
+							break; //end of title lets get out of here! 
+						}
+						else
+						{
+							book_author += (char)data[temp_index]; 	//PARSE OUT BOOK 
+						}											//TITLE MANUALLY! 
+						temp_index += 1; 
+					}
+			}
+			
+			if(diskorcloud == 1) //were only going to check the cloud for books
+								//if they chose cloud option for the cloud
+			{
+				specialized_ops local_instance = new specialized_ops(); 
+				int cloud_check = local_instance.mongo_check_if_book_exist(book_title, "txt"); 
+				
+				if(cloud_check == 1)
 				{
-					break; //end of title lets get out of here! 
+					System.out.println("NOTE: book already in cloud dont parse again");
+					return null; 
 				}
-				else
-				{
-					book_author += (char)data[temp_index]; 	//PARSE OUT BOOK 
-				}											//TITLE MANUALLY! 
-				temp_index += 1; 
 			}
-			
-			specialized_ops local_instance = new specialized_ops(); 
-			int cloud_check = local_instance.mongo_check_if_book_exist(book_title, "txt"); 
-			
-			if(cloud_check == 1)
-			{
-				System.out.println("NOTE: book already in cloud dont parse again");
-				return null; 
-			}
-			
-			//parse author
 			
 			start_index = searcher.indexOf(data, dat_tag_1, start_index);
 			if(start_index == -1)
 			{
-				System.out.println("ERROR: Cant find start of book");
-				return null; //cant parse book bro! 
+				start_index = 0; //lets try again with an alternate start tag. 
+								//THE BOOKS DONT FOLLOW a specific structure! 
+				
+						start_index = searcher.indexOf(data, dat_alt_tag_1, start_index);
+						if(start_index == -1)
+						{
+						System.out.println("ERROR: Cant find start of TXT book");
+						return null; //cant parse book bro! 
+						}
 			}
-			
+								//look for end of book
+			//dat tag  is '***'. LOOK FOR FIRST ***
 			start_index = searcher.indexOf(data, dat_tag_2, start_index);
 			if(start_index == -1)
 			{
-				System.out.println("ERROR: Cant find start of book");
+				System.out.println("ERROR: Cant find START of TXT book");
 				return null; //cant parse book bro! 
 			}
 			
 			start_index = start_index + dat_tag_2.length; 
 			
+			//LOOK FOR SECOND *** 
 			end_index = searcher.indexOf(data, dat_tag_2, start_index);
 			if(end_index == -1)
 			{
@@ -842,7 +884,7 @@ public class parser_class {
 			int tout = 0;
 			int ii = 0; 
 			while(tout != new_buff_size)
-			{
+			{							//PARSE OUT RAW BOOK DATA! 
 				dat_data[ii] = data[start_index + tout];
 				tout += 1; 
 				ii += 1; 
@@ -897,13 +939,16 @@ public class parser_class {
 		
 		book_containers store_locker = new book_containers();
 		if(this.diskorcloud == 0)
-		{
+		{									//ADD TO LOCAL CONTAINER SO WE CAN GET 
+											//EM DIRECTLY FROM THE CLASS! :) 
+			System.out.println("Disk Option Chosen. Storing book data Locally");
 			store_locker.title = book_title; 
 			store_locker.author = book_author; 
 			store_locker.file_location = da_file_name;
 			store_locker.book_sentences = cleaned_up_lines; 
 			store_locker.in_cloud = 0; //not in cloud unless gets marked 
 										//and stored in cloud below
+			this.book_storage.add(store_locker); 	//DISK OPTION CHOSEN! 
 			
 		}
 		
@@ -1037,10 +1082,11 @@ public class parser_class {
 				File newFile2 = new File(logFileName);
 				newFile.delete(); 
 			}
-  
+			
             //test hash
             if(book_already_unzipped == false)
             {
+            	append_log("BOOK_MD5: " + file_hash); //so we dont unzip this file again
             file_list.add(logFileName);
             }
             zipEntry = zis.getNextEntry();

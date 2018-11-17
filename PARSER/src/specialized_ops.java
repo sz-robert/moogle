@@ -388,7 +388,7 @@ public class specialized_ops {
 		return 1; //hash log file good to go
 	}
 	
-	public int parse_html(String URL_or_file, String hash_check_file)
+	public int parse_html(String URL_or_file, String hash_check_file, int disk_or_cloud)
 	{
 		
 		if(ensure_hash_file(hash_check_file) == 0)
@@ -475,7 +475,7 @@ public class specialized_ops {
 			}
 			
 			System.out.println("Parsing html book: " + this.book_title); 
-			
+						//we will check hash file whether the use disk or cloud! 
 			int title_check = local_i.check_log(this.book_title, 2); //lets make sure we have already parsed this title :) 
 			if(title_check == 1)
 			{
@@ -494,12 +494,16 @@ public class specialized_ops {
 				doc_type = "html"; 
 			}
 			
-			int cloud_check = mongo_check_if_book_exist(this.book_title, doc_type);
-			//dont parse if its already in cloud! 
-			if(cloud_check == 1)
+			if(disk_or_cloud == 1)	//only check cloud if 
+									//they used the parser_class with cloud option!
 			{
-				System.out.println("Error: Already parsed this book (title) IN CLOUD");
-				return 0; 
+				int cloud_check = mongo_check_if_book_exist(this.book_title, doc_type);
+				//dont parse if its already in cloud! 
+				if(cloud_check == 1)
+				{
+					System.out.println("Error: Already parsed this book (title) IN CLOUD");
+					return 0; 
+				}
 			}
 					
 			if(this.book_author == "")
