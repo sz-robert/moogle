@@ -62,8 +62,10 @@ public class Retriever {
 			}
 			return results;
 		}
-	
-	public String retrieveSentence(String loc) {
+		public String[] findSearchTerms(String text, String logicalOperator, String text2) {
+			return findWord(text);
+		}
+		public String[] findWord(String words) {
 		String sentence = "";
 		int senLoc = Integer.valueOf(loc);
 		
