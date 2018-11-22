@@ -1,9 +1,15 @@
+package searchEngineProject;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.bson.BsonDocument;
 import org.bson.Document;
 
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -11,17 +17,25 @@ import com.mongodb.client.MongoDatabase;
 public class Retriever {
 	
 	MongoClient serverConnection = new MongoClient("localhost", 27017);
-	MongoDatabase db = serverConnection.getDatabase("library");
-/*	MongoClient mongo = new MongoClient( "...amazonaws.com" , 1234 );
-	String password = ""; 
-	ServerAddress get_to_em = new ServerAddress("...amazonaws.com" , 1234); 
-	MongoCredential credential = MongoCredential.createCredential("....", "...", password.toCharArray());
-	MongoDatabase db = mongo.getDatabase("library");*/
-	
+	MongoDatabase db = serverConnection.getDatabase("library");	
+	/*
+	MongoClient mongo = new MongoClient(---------);
+	MongoClientOptions.Builder optionsBuilder = MongoClientOptions.builder()
+	.connectTimeout(30000)
+	.socketTimeout(30000);
+	String password = "password123";  
+	ServerAddress get_to_em = new ServerAddress(-----------------);
+	MongoCredential credential = MongoCredential.createCredential(----------------------);
+	MongoDatabase db = mongo.getDatabase(-----------------);
+	*/
 	MongoCollection<Document> wordsCollection = db.getCollection("bulkwords1");
 	MongoCollection<Document> booksCollection = db.getCollection("bulkbooks1");
 	
-		public String[] findSearchTerms(String words) {
+		public String[] findSearchTerms(String text, String logicalOperator, String text2) {
+		
+			return findWord(text);
+		}
+		public String[] findWord(String words) {
 			String searchTerms[] = words.split(" ");
 			String[] results = new String[10];
 			
@@ -57,12 +71,11 @@ public class Retriever {
 							resultsCounter++;
 						}
 					}
-					
 				}
 			}
 			return results;
 		}
-	
+		
 	public String retrieveSentence(String loc) {
 		String sentence = "";
 		int senLoc = Integer.valueOf(loc);
@@ -89,3 +102,9 @@ public class Retriever {
 	}
 
 }
+/*
+class Result {
+	String titleAuthor = "";
+	ArrayList<String> quotes = new ArrayList<>();
+}
+*/
