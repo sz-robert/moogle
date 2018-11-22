@@ -1,4 +1,4 @@
-package searchEngineProject;
+//package searchEngineProject;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
