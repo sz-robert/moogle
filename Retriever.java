@@ -21,7 +21,11 @@ public class Retriever {
 	MongoCollection<Document> wordsCollection = db.getCollection("bulkwords1");
 	MongoCollection<Document> booksCollection = db.getCollection("bulkbooks1");
 	
-		public String[] findSearchTerms(String words) {
+		public String[] findSearchTerms(String text, String logicalOperator, String text2) {
+		
+			return findWord(text);
+		}
+		public String[] findWord(String words) {
 			String searchTerms[] = words.split(" ");
 			String[] results = new String[10];
 			
