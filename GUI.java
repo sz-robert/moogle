@@ -305,7 +305,6 @@ public class GUI extends JFrame
 		frame.pack();
  
 		for(String result : resultsList) {
-			System.out.println("From GUI: " + result);
 			Object[] quote = {result};
 			defaultTableModel.addRow(quote);
 		}
