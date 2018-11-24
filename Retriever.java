@@ -78,7 +78,9 @@ public class Retriever {
 					int sentenceCounter = Integer.valueOf(totalOccurrences);
 					int sentenceIndex = 11;
 					while (sentenceCounter > 0) {
-						resultsList.add("          " + jsonSplitBook[sentenceIndex]);
+						if(sentenceIndex < jsonSplitBook.length) {
+							resultsList.add("          " + jsonSplitBook[sentenceIndex]);
+						}
 						sentenceCounter--;
 						sentenceIndex+=4;
 					}
