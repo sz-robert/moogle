@@ -22,13 +22,14 @@ public class Retriever {
 	
 	MongoCollection<Document> wordsCollection = db.getCollection("wordsM2");
 	MongoCollection<Document> booksCollection = db.getCollection("booksM2");
-	ArrayList<String> resultsList = new ArrayList<>();
 	
 	public ArrayList<String> findSearchTerms(String text, String logicalOperator, String text2) {
 		ArrayList<String> results = findWords(text);
 		return results;
 	}
 	public ArrayList<String> findWords(String words) {
+		ArrayList<String> resultsList = new ArrayList<>();
+		resultsList.clear();
 		String searchTerms[] = words.split(" ");
 		String bookId = "";
 		String totalOccurrences = "";
