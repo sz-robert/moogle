@@ -302,6 +302,10 @@ public class GUI extends JFrame
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setContentPane(panel);
 		frame.pack();
+		
+		String column[] = {"Results for: " + searchField.getText()};
+		DefaultTableModel defaultTableModel = new DefaultTableModel(column, 0);
+		  
 		defaultTableModel.setRowCount(0);
 		for(String result : resultsList) {
 			Object[] quote = {result};

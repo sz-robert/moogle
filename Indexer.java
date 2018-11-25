@@ -5,6 +5,7 @@ import org.bson.Document;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Indexes;
 
 public class Indexer {
 	
@@ -24,10 +25,20 @@ public class Indexer {
 	
 	private MongoCollection<Document> wordsCollection = db.getCollection("wordsM2");
 	private MongoCollection<Document> booksCollection = db.getCollection("booksM2");
+	
 
 	private Hashtable<String, Word> wordStatistics = new Hashtable<>();
 	
-	public Indexer () {}
+	public Indexer () {
+		wordsCollection.createIndex(Indexes.compoundIndex(Indexes.ascending("word"), 
+				Indexes.ascending("bookId"),
+				Indexes.ascending("author"),
+				Indexes.ascending("bookId"),
+				Indexes.descending("totalOccurrences")));
+		booksCollection.createIndex(Indexes.compoundIndex(Indexes.ascending("bookId"), 
+				Indexes.ascending("title"),
+				Indexes.ascending("author")));
+	}
 
 	public void insertRemote(String book_title, String book_author, String[] book_senteces2) {
 		insert(book_title, book_author, "unzipped", book_senteces2);

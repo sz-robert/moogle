@@ -27,7 +27,7 @@ public class Retriever {
 		ArrayList<String> results = findWords(text);
 		return results;
 	}
-	public ArrayList<String> findWords(String words) {
+	private ArrayList<String> findWords(String words) {
 		ArrayList<String> resultsList = new ArrayList<>();
 		String searchTerms[] = words.split(" ");
 		String bookId = "";
@@ -74,10 +74,12 @@ public class Retriever {
 					String bookAuthor = (String) bookResult.get("author");
 					String citation = bookTitle + ", " + bookAuthor + " (" + totalOccurrences + " occurrences)";
 					resultsList.add(citation);
+					int occurrencesCounter = 1;
 					for (String location : locationsList) {
 						String currentSentence = "sentence-" + location;
 						String sentence = (String) bookResult.get(currentSentence);
-						resultsList.add("          " + sentence);
+						resultsList.add(occurrencesCounter + "          " + sentence);
+						occurrencesCounter++;
 					}
 				}
 			}
