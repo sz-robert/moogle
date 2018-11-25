@@ -14,4 +14,4 @@ The program asks for three directories:
 3. An empty text file for keeping a record of processed books such as log.txt.
 
 After providing the required directories, click the "Process Books" button to store the books in the MongoDB database
-After processing is completed, type a search term into the textbox labeled "Search Terms and press the "Search" button to retrieve quotes containing the search term.
+After processing is completed, type a search term into the textbox labeled "Search Terms and press the "Search" button to retrieve quotes containing the search term. AND/OR/NOT operations are planned for the next release.
