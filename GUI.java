@@ -1,11 +1,11 @@
 //package searchEngineProject;
-
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.awt.event.ActionEvent;
 import javax.swing.JFrame;
 //import javax.swing.JTextArea;
@@ -17,6 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.JFileChooser;
 
 public class GUI extends JFrame 
@@ -58,8 +59,9 @@ public class GUI extends JFrame
 	JComboBox <String> searchOptions = new JComboBox <String> ();
 
 	//creating an instance object to initialize the table
-	private Object[][] searchResultTable = new Object[50][1];
-	
+//	private Object[][] searchResultTable = new Object[50][1];
+	String column[] = {"Results"};
+	DefaultTableModel defaultTableModel = new DefaultTableModel(column, 0);
 	Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
 	
 	//constructor to build the main GUI 
@@ -291,7 +293,7 @@ public class GUI extends JFrame
 		    "Message",
 		    JOptionPane.PLAIN_MESSAGE);
 		*/
-		String[] results = retriever.findSearchTerms(searchField.getText(), logicalOperator, searchField2.getText());
+		ArrayList<String> resultsList = retriever.findSearchTerms(searchField.getText(), logicalOperator, searchField2.getText());
 		
 		//table variables
 		frame = new JFrame("");
@@ -300,7 +302,17 @@ public class GUI extends JFrame
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setContentPane(panel);
 		frame.pack();
- 
+		
+		String column[] = {"Results for: " + searchField.getText()};
+		DefaultTableModel defaultTableModel = new DefaultTableModel(column, 0);
+		  
+		defaultTableModel.setRowCount(0);
+		for(String result : resultsList) {
+			Object[] quote = {result};
+			defaultTableModel.addRow(quote);
+		}
+		/*
+		
 		String[] searchOutPutArray = new String[10]; 
 		
 		//loop (searchOutPutArray.length-1) times to create elements of the table 
@@ -308,13 +320,14 @@ public class GUI extends JFrame
 		{
 			searchResultTable[i][0] = results[i];
 		} 
- 
+ */
 		//table title
 		String[] tableTitle = {
 				"Search result for: " + searchField.getText()};
 
 		// initializing the GUI interface to display the search result in a table
-		table = new JTable(searchResultTable, tableTitle);
+//		table = new JTable(searchResultTable, tableTitle);
+		table = new JTable(defaultTableModel);
 		table.setFillsViewportHeight(true);
 		 
 		scrollPane = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
