@@ -1,18 +1,17 @@
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import org.bson.BsonDocument;
 import org.bson.Document;
-
+import org.json.simple.JSONObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
 public class Retriever {
+	public Retriever () {}
 	
-	MongoClient serverConnection = new MongoClient("localhost", 27017);
-	MongoDatabase db = serverConnection.getDatabase("library");
+	private MongoClient serverConnection = new MongoClient("localhost", 27017);
+	private MongoDatabase db = serverConnection.getDatabase("library");
 	
 /*	MongoClient mongo = new MongoClient( "...amazonaws.com" , 1234 );
 	String password = ""; 
@@ -20,8 +19,9 @@ public class Retriever {
 	MongoCredential credential = MongoCredential.createCredential("....", "...", password.toCharArray());
 	MongoDatabase db = mongo.getDatabase("library");*/
 	
-	MongoCollection<Document> wordsCollection = db.getCollection("wordsM2");
-	MongoCollection<Document> booksCollection = db.getCollection("booksM2");
+	private MongoCollection<Document> wordsCollection = db.getCollection("wordsM2");
+	private MongoCollection<Document> booksCollection = db.getCollection("booksM2");
+
 	
 	public ArrayList<String> findSearchTerms(String text, String logicalOperator, String text2) {
 		ArrayList<String> results = findWords(text);
@@ -29,7 +29,6 @@ public class Retriever {
 	}
 	public ArrayList<String> findWords(String words) {
 		ArrayList<String> resultsList = new ArrayList<>();
-		resultsList.clear();
 		String searchTerms[] = words.split(" ");
 		String bookId = "";
 		String totalOccurrences = "";
@@ -70,19 +69,15 @@ public class Retriever {
 			                    new Document("$project", new Document(projectBookFields)
 			                    )));
 				for (Document bookDoc : aggregateSentences) {
-					String[] jsonSplitBook = bookDoc.toJson().split("\"");
-					String titleName = jsonSplitBook[3];
-					String authorName = jsonSplitBook[7];
-					String citation = titleName + ", " + authorName + " (" + totalOccurrences + " occurrences)";
+					JSONObject bookResult = new JSONObject(bookDoc);
+					String bookTitle = (String) bookResult.get("title");
+					String bookAuthor = (String) bookResult.get("author");
+					String citation = bookTitle + ", " + bookAuthor + " (" + totalOccurrences + " occurrences)";
 					resultsList.add(citation);
-					int sentenceCounter = Integer.valueOf(totalOccurrences);
-					int sentenceIndex = 11;
-					while (sentenceCounter > 0) {
-						if(sentenceIndex < jsonSplitBook.length) {
-							resultsList.add("          " + jsonSplitBook[sentenceIndex]);
-						}
-						sentenceCounter--;
-						sentenceIndex+=4;
+					for (String location : locationsList) {
+						String currentSentence = "sentence-" + location;
+						String sentence = (String) bookResult.get(currentSentence);
+						resultsList.add("          " + sentence);
 					}
 				}
 			}

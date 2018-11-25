@@ -1,66 +1,15 @@
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.Date;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.stream.Stream;
-import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.bson.Document;
-import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.conversions.Bson;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BulkWriteException;
-import com.mongodb.BulkWriteResult;
-import com.mongodb.DB;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
-import com.mongodb.bulk.BulkWriteError;
-import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.BulkWriteOptions;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.UpdateOneModel;
-import com.mongodb.client.model.UpdateOptions;
-import com.mongodb.client.model.Updates;
-import com.mongodb.client.model.WriteModel;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-import javax.json.stream.JsonParser;
-import javax.json.stream.JsonParserFactory;
 
 public class Indexer {
 	
-	MongoClient serverConnection = new MongoClient("localhost", 27017);
-	MongoDatabase db = serverConnection.getDatabase("library");
+	private MongoClient serverConnection = new MongoClient("localhost", 27017);
+	private MongoDatabase db = serverConnection.getDatabase("library");
 	
 /*
 	MongoClient mongo = new MongoClient( "ec2-34-222-109-70.us-west-2.compute.amazonaws.com" , 9999 );
@@ -73,10 +22,10 @@ public class Indexer {
 	MongoDatabase db = mongo.getDatabase("library");
 	*/
 	
-	MongoCollection<Document> wordsCollection = db.getCollection("wordsM2");
-	MongoCollection<Document> booksCollection = db.getCollection("booksM2");
+	private MongoCollection<Document> wordsCollection = db.getCollection("wordsM2");
+	private MongoCollection<Document> booksCollection = db.getCollection("booksM2");
 
-	Hashtable<String, Word> wordStatistics = new Hashtable<>();
+	private Hashtable<String, Word> wordStatistics = new Hashtable<>();
 	
 	public Indexer () {}
 

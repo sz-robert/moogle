@@ -1,5 +1,4 @@
 //package searchEngineProject;
-
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -303,7 +302,7 @@ public class GUI extends JFrame
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setContentPane(panel);
 		frame.pack();
- 
+		defaultTableModel.setRowCount(0);
 		for(String result : resultsList) {
 			Object[] quote = {result};
 			defaultTableModel.addRow(quote);
