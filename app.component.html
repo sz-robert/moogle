@@ -1,0 +1,19 @@
+<!--The content below is only a placeholder and can be replaced.-->
+<div style="text-align:center">
+  <h1>
+    Welcome to the {{ title }}!
+  </h1>
+  <p>The search engine application is used to assist 
+    students and researchers of all types to perform 
+    multiple searches in any collection of books.</p>
+    <h2>Please input query below</h2>
+    <input #myInput type="text">
+    <button (click)="searchValue(myInput.value)">Search</button>
+    
+    <h2>Results</h2>
+ </div>
+ 
+
+<br/>
+<a href="">User Guide</a>
+<router-outlet></router-outlet>
